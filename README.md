@@ -3,6 +3,7 @@ Shell script for managing Rackspace Cloud Load Balancers, useful for accessing f
 
 1. Adding multiple SSL certs for SNI
 2. Discovering the Servicenet ip address of your load balancers
+3. Changing the timeout
 
 **Usage**
 
