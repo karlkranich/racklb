@@ -18,6 +18,9 @@ Show list of load balancers with racklb.sh
 Show load balancer settings with racklb.sh -l LoadBalancerID
 Add a certificate mapping with racklb.sh -a -l LoadBalancerID -n Hostname -c CertFile -k KeyFile [-i intermediateCert]
 Delete a certificate mapping with racklb.sh -d -l LoadBalancerID -m MappingID
+Change timeout with racklb.sh -t TimeoutSecs -l LoadBalancerID
+
+(parameter order matters, at least until I figure out how to process them properly)
 EOF
 }
 
@@ -54,7 +57,6 @@ addMapping() {
     cat $intCertFile | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g' >> lb.json
   fi
   echo '" } }' >> lb.json
-  #cat lb.json
 
   # Post the json
   getToken
@@ -71,9 +73,19 @@ deleteMapping() {
   curl -s -H "Content-type: application/json" -H "X-Auth-Token: $rackToken" -X DELETE https://ord.loadbalancers.api.rackspacecloud.com/v1.0/$rackAccount/loadbalancers/$rackLBID/ssltermination/certificatemappings/$rackMapID
 }
 
+changeTimeout() {
+  if [ -z "$timeout" ]; then
+    echo -d requires timeout value in seconds
+    exit
+  fi
+  getToken
+  curl -g -H "X-Auth-Token: $rackToken" -d '{"loadBalancer": {"timeout": "'"$timeout"'"}}' \
+  -X PUT -H "content-type: application/json" https://ord.loadbalancers.api.rackspacecloud.com/v1.0/$rackAccount/loadbalancers/$rackLBID
+}
+
 # Main script
 # First get all the arguments
-optString='hadl:n:c:k:i:m:'
+optString='hadl:n:c:k:i:m:t:'
 while getopts "$optString" option
 do
   case $option in
@@ -99,6 +111,9 @@ do
     m)
       rackMapID=$OPTARG
       ;;
+    t)
+      timeout=$OPTARG
+      ;;
   esac
 done
 
@@ -113,6 +128,10 @@ do
       ;;
     d)
       deleteMapping
+      exit
+      ;;
+    t)
+      changeTimeout
       exit
       ;;
     l)
